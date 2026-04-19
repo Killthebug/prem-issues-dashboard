@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prem App — Production Issues Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper-cream: #FDFCF9;
+      --paper-parchment: #F5F3ED;
+      --paper-linen: #F0EDE6;
+      --paper-khaki: #E8E4DB;
+      --paper-sand: #DDD9D0;
+      --paper-stone: #C5C0B6;
+      --paper-walnut: #8A8478;
+      --paper-bark: #6B665D;
+      --paper-espresso: #4A4640;
+      --paper-ink: #2C2A25;
+      --paper-deepink: #1A1814;
+      --paper-forest: #16A34A;
+      --paper-amber: #D97706;
+      --paper-brick: #DC2626;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper-cream: #1C1A17;
+        --paper-parchment: #211F1B;
+        --paper-linen: #2A2724;
+        --paper-khaki: #333028;
+        --paper-sand: #3D3A33;
+        --paper-stone: #5C5850;
+        --paper-walnut: #8A8478;
+        --paper-bark: #A09A8F;
+        --paper-espresso: #C5C0B6;
+        --paper-ink: #E8E4DB;
+        --paper-deepink: #F5F3ED;
+      }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--paper-cream);
+      color: var(--paper-espresso);
+      line-height: 1.65;
+      background-image: radial-gradient(rgba(30,25,18,0.07) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-image: radial-gradient(rgba(245,243,237,0.04) 1px, transparent 1px);
+        background-size: 24px 24px;
+      }
+    }
+
+    h1, h2, h3 { font-family: 'Lora', serif; color: var(--paper-deepink); }
+    h4 { font-family: 'Inter', sans-serif; color: var(--paper-deepink); font-weight: 600; }
+    code, pre, .mono { font-family: 'Space Mono', monospace; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .header-left h1 { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+    .header-left .subtitle { font-family: 'Newsreader', serif; font-style: italic; font-size: 16px; color: var(--paper-walnut); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-badge { background: var(--paper-linen); border: 1px solid var(--paper-sand); border-radius: 4px; padding: 4px 10px; font-size: 11px; font-weight: 500; color: var(--paper-bark); }
+
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .stat-card { background: var(--paper-cream); border: 1px solid var(--paper-sand); border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(30,25,18,0.08), inset 0 1px 0 rgba(255,255,255,0.5); cursor: pointer; transition: box-shadow 0.2s, transform 0.15s; }
+    @media (prefers-color-scheme: dark) { .stat-card { background: var(--paper-parchment); box-shadow: 0 1px 3px rgba(0,0,0,0.25); } }
+    .stat-card:hover { box-shadow: 0 2px 8px rgba(30,25,18,0.08), 0 1px 2px rgba(30,25,18,0.06); transform: translateY(-1px); }
+    @media (prefers-color-scheme: dark) { .stat-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.15); } }
+    .stat-card.active { border-color: var(--paper-ink); box-shadow: 0 2px 8px rgba(30,25,18,0.12), 0 1px 2px rgba(30,25,18,0.06); }
+    .stat-number { font-family: 'Space Mono', monospace; font-size: 32px; font-weight: 700; color: var(--paper-deepink); line-height: 1.1; }
+    .stat-label { font-size: 11px; font-weight: 500; color: var(--paper-walnut); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    .stat-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; }
+    @media (max-width: 768px) { .charts-row { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--paper-cream); border: 1px solid var(--paper-sand); border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(30,25,18,0.08), inset 0 1px 0 rgba(255,255,255,0.5); }
+    @media (prefers-color-scheme: dark) { .chart-card { background: var(--paper-parchment); box-shadow: 0 1px 3px rgba(0,0,0,0.25); } }
+    .chart-title { font-size: 13px; font-weight: 500; color: var(--paper-bark); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; }
+    .bar-label { width: 80px; font-size: 12px; font-weight: 500; color: var(--paper-bark); text-align: right; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 28px; background: var(--paper-linen); border-radius: 4px; overflow: hidden; position: relative; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 600; color: white; min-width: 28px; }
+    .bar-fill.p0 { background: var(--paper-brick); }
+    .bar-fill.p1 { background: var(--paper-amber); }
+    .bar-fill.p2 { background: var(--paper-ink); opacity: 0.7; }
+    .bar-fill.p3 { background: var(--paper-walnut); }
+
+    .donut-container { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; }
+    .donut-svg { width: 160px; height: 160px; }
+    .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--paper-bark); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    .filter-row { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+    .filter-tab { background: transparent; border: none; padding: 5px 12px; font-size: 11px; font-weight: 500; font-family: 'Inter', sans-serif; color: var(--paper-walnut); border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+    .filter-tab:hover { background: var(--paper-linen); color: var(--paper-ink); }
+    .filter-tab.active { background: var(--paper-deepink); color: var(--paper-cream); }
+    .filter-divider { width: 1px; height: 16px; background: var(--paper-sand); margin: 0 4px; }
+    .search-input { background: var(--paper-cream); border: 1px solid var(--paper-sand); border-radius: 8px; padding: 6px 12px; font-size: 12px; font-family: 'Inter', sans-serif; color: var(--paper-ink); outline: none; margin-left: auto; width: 200px; transition: border-color 0.15s, box-shadow 0.15s; }
+    .search-input::placeholder { color: var(--paper-stone); }
+    .search-input:focus { border-color: var(--paper-ink); box-shadow: 0 1px 3px rgba(30,25,18,0.08); }
+
+    .issues-list { display: flex; flex-direction: column; gap: 8px; }
+    .issue-card { background: var(--paper-cream); border: 1px solid var(--paper-sand); border-radius: 8px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(30,25,18,0.08), inset 0 1px 0 rgba(255,255,255,0.5); transition: box-shadow 0.2s, border-color 0.2s; cursor: pointer; animation: fadeIn 0.3s ease both; }
+    @media (prefers-color-scheme: dark) { .issue-card { background: var(--paper-parchment); box-shadow: 0 1px 3px rgba(0,0,0,0.25); } }
+    .issue-card:hover { box-shadow: 0 2px 8px rgba(30,25,18,0.08), 0 1px 2px rgba(30,25,18,0.06); }
+    .issue-card.expanded { border-color: var(--paper-ink); }
+    .issue-header { display: flex; align-items: center; gap: 10px; }
+    .issue-num { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: var(--paper-walnut); min-width: 24px; }
+    .issue-priority { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
+    .issue-priority.p0 { background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.25); color: var(--paper-brick); }
+    .issue-priority.p1 { background: rgba(217,119,6,0.1); border: 1px solid rgba(217,119,6,0.25); color: var(--paper-amber); }
+    .issue-priority.p2 { background: var(--paper-linen); border: 1px solid var(--paper-sand); color: var(--paper-ink); }
+    .issue-priority.p3 { background: var(--paper-linen); border: 1px solid var(--paper-sand); color: var(--paper-walnut); }
+    .issue-title { font-size: 13px; font-weight: 500; color: var(--paper-ink); flex: 1; }
+    .issue-category { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 4px; background: var(--paper-linen); border: 1px solid var(--paper-sand); color: var(--paper-bark); flex-shrink: 0; }
+    .issue-source-count { font-size: 11px; color: var(--paper-walnut); font-weight: 500; flex-shrink: 0; }
+    .issue-expand-icon { font-size: 14px; color: var(--paper-stone); transition: transform 0.2s; flex-shrink: 0; }
+    .issue-card.expanded .issue-expand-icon { transform: rotate(90deg); }
+    .issue-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--paper-sand); }
+    .issue-card.expanded .issue-detail { display: block; }
+    .issue-detail p { font-size: 12px; color: var(--paper-bark); line-height: 1.7; margin-bottom: 8px; }
+    .issue-detail .source-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--paper-walnut); margin-bottom: 4px; }
+    .issue-detail .quote { background: var(--paper-parchment); border-left: 3px solid var(--paper-sand); border-radius: 0 4px 4px 0; padding: 8px 12px; font-size: 12px; color: var(--paper-bark); font-style: italic; line-height: 1.6; margin-bottom: 8px; }
+    .issue-reporters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .reporter-pill { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; background: var(--paper-linen); border: 1px solid var(--paper-sand); color: var(--paper-bark); }
+
+    .reporter-bars { display: flex; flex-direction: column; gap: 6px; }
+    .reporter-row { display: flex; align-items: center; gap: 8px; }
+    .reporter-name { width: 100px; font-size: 11px; font-weight: 500; color: var(--paper-bark); text-align: right; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .reporter-track { flex: 1; height: 18px; background: var(--paper-linen); border-radius: 3px; overflow: hidden; }
+    .reporter-fill { height: 100%; background: var(--paper-ink); opacity: 0.6; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .reporter-count { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; color: var(--paper-walnut); min-width: 20px; }
+
+    .roadmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .roadmap-card { border-radius: 8px; padding: 16px; border: 1px solid var(--paper-sand); }
+    .roadmap-card.p0 { background: rgba(220,38,38,0.04); border-color: rgba(220,38,38,0.2); }
+    .roadmap-card.p1 { background: rgba(217,119,6,0.04); border-color: rgba(217,119,6,0.2); }
+    .roadmap-card.p2 { background: var(--paper-parchment); }
+    .roadmap-card.p3 { background: var(--paper-parchment); opacity: 0.7; }
+    .roadmap-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .roadmap-priority-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 4px; }
+    .roadmap-card.p0 .roadmap-priority-label { background: rgba(220,38,38,0.12); color: var(--paper-brick); }
+    .roadmap-card.p1 .roadmap-priority-label { background: rgba(217,119,6,0.12); color: var(--paper-amber); }
+    .roadmap-card.p2 .roadmap-priority-label { background: var(--paper-linen); color: var(--paper-ink); }
+    .roadmap-card.p3 .roadmap-priority-label { background: var(--paper-linen); color: var(--paper-walnut); }
+    .roadmap-title { font-size: 13px; font-weight: 600; color: var(--paper-deepink); }
+    .roadmap-items { display: flex; flex-direction: column; gap: 4px; }
+    .roadmap-item { font-size: 12px; color: var(--paper-bark); padding-left: 12px; position: relative; line-height: 1.5; }
+    .roadmap-item::before { content: ''; position: absolute; left: 0; top: 8px; width: 4px; height: 4px; border-radius: 50%; background: var(--paper-stone); }
+    .roadmap-card.p0 .roadmap-item::before { background: var(--paper-brick); }
+    .roadmap-card.p1 .roadmap-item::before { background: var(--paper-amber); }
+    .hidden { display: none !important; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--paper-walnut); font-size: 13px; }
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--paper-sand); font-size: 11px; color: var(--paper-walnut); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .stat-card { animation: fadeIn 0.3s ease both; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--paper-cream); }
+    ::-webkit-scrollbar-thumb { background: var(--paper-sand); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--paper-stone); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <h1>Production Issues</h1>
+        <div class="subtitle">Fluso / Prem App — #prem-app-bugs analysis · 842 messages · 86 reports</div>
+      </div>
+      <div class="header-right">
+        <div class="header-badge">49 issues</div>
+        <div class="header-badge">Apr 19, 2026</div>
+      </div>
+    </div>
+    <div class="stats-row" id="statsRow"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Issues by Priority</div>
+        <div id="priorityChart" class="bar-chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Issues by Category</div>
+        <div class="donut-container">
+          <svg id="donutChart" class="donut-svg" viewBox="0 0 160 160"></svg>
+          <div id="donutLegend" class="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-bottom: 28px;">
+      <div class="chart-title">Top Bug Reporters</div>
+      <div id="reportersChart" class="reporter-bars"></div>
+    </div>
+    <h3 style="font-size: 18px; margin-bottom: 14px;">Priority Roadmap</h3>
+    <div class="roadmap" id="roadmap"></div>
+    <div class="filter-row" id="filterRow">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <div class="filter-divider"></div>
+      <button class="filter-tab" data-filter="p0">P0 — Ship Blockers</button>
+      <button class="filter-tab" data-filter="p1">P1 — Must Fix</button>
+      <button class="filter-tab" data-filter="p2">P2 — Should Fix</button>
+      <button class="filter-tab" data-filter="p3">P3 — Polish</button>
+      <div class="filter-divider"></div>
+      <button class="filter-tab" data-filter="auth">Auth</button>
+      <button class="filter-tab" data-filter="infra">Infrastructure</button>
+      <button class="filter-tab" data-filter="chat">Chat / AI</button>
+      <button class="filter-tab" data-filter="connectors">Connectors</button>
+      <button class="filter-tab" data-filter="ui">UI / UX</button>
+      <button class="filter-tab" data-filter="data">Data / Security</button>
+      <div class="filter-divider"></div>
+      <input type="text" class="search-input" id="searchInput" placeholder="Search issues…" />
+    </div>
+    <div class="issues-list" id="issuesList"></div>
+    <div class="footer">
+      <span>Source: #prem-app-bugs Slack channel · 842 messages analyzed</span>
+      <span>Generated by Fluso · April 2026</span>
+    </div>
+  </div>
+  <script>
+    const issues = [
+      { id: 1, title: "Separating dev and prod environments", priority: "p0", category: "infra", reporters: ["Biswaroop", "Priyansu"], quotes: ["Bugs appear on fluso.vercel.app (prod) but not on dev deployment. Currently running on api.dev.khichdi.cc which is clearly a dev domain."], detail: "Production and development share the same backend domain (api.dev.khichdi.cc). Biswaroop confirmed bugs appear on prod but not dev. Needs proper env separation." },
+      { id: 2, title: "Getting auth sorted — moving away from khichdi", priority: "p0", category: "auth", reporters: ["Charitra"], quotes: ["After a new backend deployment, the auth tokens expire. We need a refresh token mechanism."], detail: "Backend is still at api.dev.khichdi.cc. Tokens break on every deploy. Need to move to proper auth infrastructure with refresh tokens." },
+      { id: 3, title: "All app connectors created via Prem accounts", priority: "p2", category: "connectors", reporters: ["Jai", "Polly"], quotes: ["Slack connector for new user signup is broken — user gets logged out, screen resets to login.", "Same Slack OAuth2 credentials for the connectors make the bug report work?!?"], detail: "Connectors are created using Prem's own accounts instead of user's. Causes login resets and shared credentials issues." },
+      { id: 4, title: "Windows don't close after serving purpose", priority: "p2", category: "ui", reporters: ["Suhan"], quotes: ["Post login — the Google OAuth browser window does not close/navigate to a page that says 'you are now connected to Fluso'."], detail: "OAuth popup windows remain open after authentication flow completes." },
+      { id: 5, title: "Don't redirect to login page on any route", priority: "p2", category: "auth", reporters: ["Charitra"], quotes: ["We can just redirect users to the login page whenever we get 401s in API response — this is a workaround, not a fix."], detail: "Users get 401s and are redirected to login. The 401s themselves need to stop happening. Root cause: auth tokens expire on every deployment (see #10)." },
+      { id: 6, title: "Pipeline for building and signing Apple DMGs", priority: "p3", category: "infra", reporters: [], quotes: [], detail: "Net-new requirement — no CI/CD pipeline exists for building and code-signing macOS DMG installers." },
+      { id: 7, title: "Pipeline for building and signing Microsoft EXEs", priority: "p3", category: "infra", reporters: [], quotes: [], detail: "Net-new requirement — no CI/CD pipeline exists for building and code-signing Windows EXE installers." },
+      { id: 8, title: "Rate limiting broken — NLB collapses users into 2 shared IP buckets", priority: "p0", category: "infra", reporters: ["Biswaroop"], quotes: ["NLB preserve_client_ip.enabled = false means Caddy sees only 2 NLB private IPs. Backend rate-limits on those IPs. One bucket already exhausted → intermittent 429s."], detail: "The NLB has preserve_client_ip.enabled = false, so Caddy only sees 2 NLB private IPs instead of real user IPs. The backend rate-limits on those 2 IPs → one bucket is already exhausted → users hit 429s randomly. Fix: Enable client IP preservation on NLB target groups + move daily limits to authenticated identity." },
+      { id: 9, title: "Cross-user data leakage — tasks from other users appearing", priority: "p0", category: "data", reporters: ["Aishwarya Raghuwanshi"], quotes: ["The tasks chronograph detected don't belong to me. I'm logged in with my own account but these tasks showing up looks like someone else's work."], detail: "Critical multi-tenancy security bug. Users can see tasks and data belonging to other users. Data isolation is broken at the chronograph/query level." },
+      { id: 10, title: "Auth tokens expire on every backend deployment", priority: "p0", category: "auth", reporters: ["Charitra"], quotes: ["Same logout issue as Telegram. After a new backend deployment, auth tokens expire. We need a refresh token mechanism."], detail: "This is the root cause of issue #5 (redirect to login). Without a refresh token mechanism, every backend deploy logs everyone out. Production-blocking." },
+      { id: 11, title: "Connectors + Chronograph break on Telegram account reset", priority: "p1", category: "connectors", reporters: ["Suhan"], quotes: ["The connectors and chronograph ingestion on app is buggy if we reset on TG for both chronograph and the account."], detail: "Shared state between Telegram and app causes breakage when accounts are reset. Reset doesn't propagate cleanly." },
+      { id: 12, title: "UI is slow and hangs during tasks", priority: "p1", category: "ui", reporters: ["Suhan", "Biswaroop"], quotes: ["One general complaint — UI is slow and hangs during tasks."], detail: "General UI performance issue. Tasks cause the interface to become unresponsive." },
+      { id: 13, title: "Threads loading time too long", priority: "p1", category: "ui", reporters: ["Suhan"], quotes: [], detail: "Thread views take an unacceptable time to load content." },
+      { id: 14, title: "Long-running / complex chats consistently fail", priority: "p1", category: "chat", reporters: ["Suhan", "Aishwarya", "Simone", "Marco"], quotes: ["Long running/complex chat still failing.", "It worked for five minutes and then stopped working. The animation of the rolling Fluso icon was glitching and the write PDF script was flickering."], detail: "The single most reported issue. Chats stop midway, fail after 5 minutes, get stuck, or say 'request no longer active'. Will kill adoption." },
+      { id: 15, title: "Chat stops abruptly — stream ends without reason", priority: "p1", category: "chat", reporters: ["Jai", "Simone"], quotes: ["Failed — Stream ended without reason.", "The chat just stopped midway."], detail: "AI response streams terminate unexpectedly without error messages or recovery options." },
+      { id: 16, title: "429 errors causing failed interactions", priority: "p1", category: "infra", reporters: ["Jai"], quotes: ["Lots of 429 errors."], detail: "Rate limit 429s from the NLB bug (#8) causing user interactions to fail intermittently." },
+      { id: 17, title: "Stop button doesn't work", priority: "p1", category: "ui", reporters: ["Marco Guerriero", "Suhan", "Priyansi"], quotes: ["Stop agent button does not work.", "Unable to stop this chat.", "Abort then chat does not work."], detail: "The stop/abort button doesn't actually stop the agent. After trying to stop, the chat becomes unresponsive." },
+      { id: 18, title: "All chats disappeared — data loss event", priority: "p1", category: "data", reporters: ["Jai"], quotes: ["All my chats disappeared?"], detail: "Critical data loss — all chat history vanished for a user." },
+      { id: 19, title: "Fluso doesn't respond after stop + follow-up message", priority: "p2", category: "chat", reporters: ["Jai"], quotes: ["Fluso doesn't respond when I 'stop' it mid thinking and then send a follow up message."], detail: "After stopping a response, sending a follow-up message gets no response. Chat becomes dead." },
+      { id: 20, title: "Skills created in project folder don't show in Skills tab", priority: "p2", category: "ui", reporters: ["Sadhu Teja"], quotes: ["I have asked it to create a skill, it creates in my project folder rather than in the global root. As a result my skill doesn't show up in the skills tab."], detail: "Skill creation puts files in project scope instead of global scope, making them invisible in the Skills tab." },
+      { id: 21, title: "Slack connector replies start new thread instead of inline", priority: "p2", category: "connectors", reporters: ["Marco Guerriero"], quotes: ["The connector needs to be fixed to allow inline reply, now it starts a new thread."], detail: "Slack connector creates new threads instead of replying inline in existing threads." },
+      { id: 22, title: "Slack connector doesn't have a files send option", priority: "p2", category: "connectors", reporters: ["Jai"], quotes: ["Slack connector doesn't have a files send option."], detail: "No ability to send files through the Slack connector." },
+      { id: 23, title: "Google Drive upload not working", priority: "p2", category: "connectors", reporters: ["Jai"], quotes: ["Google Drive upload is not working."], detail: "Upload functionality for Google Drive connector is broken." },
+      { id: 24, title: "PPT files not delivered", priority: "p2", category: "chat", reporters: ["Jai"], quotes: ["PPT does not get delivered."], detail: "Generated PPT files are not being delivered to users." },
+      { id: 25, title: "Sent image doesn't disappear from chat box", priority: "p2", category: "ui", reporters: ["Jai"], quotes: ["Sent an image mid conversation and it doesn't disappear from the sent chat box."], detail: "After sending an image, the thumbnail persists in the chat input area." },
+      { id: 26, title: "Poor offline / patchy network handling", priority: "p2", category: "ui", reporters: ["Jai", "Marco Guerriero"], quotes: ["I was typing a prompt on the home screen and the screen just refreshed and I lost my prompt.", "If the network is bad, after I enter the prompt and hit enter, it just stays stuck on the home screen."], detail: "No graceful handling of network interruptions. Prompts get lost, screens freeze." },
+      { id: 27, title: "Skills page timing out", priority: "p2", category: "ui", reporters: ["Jai"], quotes: ["Skills page timing out."], detail: "The Skills page fails to load and times out." },
+      { id: 28, title: "Project folder loads slowly", priority: "p2", category: "ui", reporters: ["Marco Guerriero"], quotes: ["Loading the Project folder is a bit slow."], detail: "Project folder view has slow loading times." },
+      { id: 29, title: "Sandbox booting shows projects as empty", priority: "p2", category: "ui", reporters: ["Jai"], quotes: ["When the sandbox is booting up the projects appear as empty."], detail: "During sandbox initialization, projects display as empty folders." },
+      { id: 30, title: "Dismiss button doesn't work on home page", priority: "p2", category: "ui", reporters: ["Suhan"], quotes: ["The dismiss button does not work in the home page — for the chat threads."], detail: "The dismiss/close button for chat thread cards on the home page is non-functional." },
+      { id: 31, title: "Image analysis is very slow (3-5 min for simple images)", priority: "p2", category: "chat", reporters: ["Simone"], quotes: ["Issue loading an image and taking 3/5 minutes to analyze a simple 2 liners."], detail: "Image analysis takes 3-5 minutes for simple images that should take seconds." },
+      { id: 32, title: "Can't select subfolders in chatbox project picker", priority: "p2", category: "ui", reporters: ["Marco Guerriero"], quotes: ["From the chatbox I cannot select the subfolder CampusBiomedico within the folder Customers."], detail: "Project picker in chat doesn't allow navigating into subfolders." },
+      { id: 33, title: "Feedback widget doesn't support pasting images/video", priority: "p2", category: "ui", reporters: ["Suhan"], quotes: ["The 'send feedback' widget should allow pasting the image in the text window… painfully longer to report bugs otherwise."], detail: "Bug reporting workflow is painful without the ability to paste screenshots directly." },
+      { id: 34, title: "Step status text is white-on-white when working", priority: "p2", category: "ui", reporters: ["Priyansi"], quotes: ["Step status summary text is white when working, when done working, it is black again."], detail: "Contrast issue — status text becomes invisible against light backgrounds during active processing." },
+      { id: 35, title: "Welcome message should use user's name", priority: "p3", category: "ui", reporters: ["Simone"], quotes: ["Let's welcome the users with their name to start?"], detail: "Personalization request — greet users by name." },
+      { id: 36, title: '"New chat" should be "home" instead', priority: "p3", category: "ui", reporters: ["Simone"], quotes: ["Shouldn't new chat being home instead?"], detail: "Navigation labeling — rename 'New Chat' to 'Home'." },
+      { id: 37, title: "Click full rectangle to review task (not just button)", priority: "p3", category: "ui", reporters: ["Simone"], quotes: ["Let's make sure that we can click on the all rectangle to review the task."], detail: "Task review should be clickable on the entire card, not just the review button." },
+      { id: 38, title: "Downloadable link directly in chat instead of Project folder", priority: "p3", category: "ui", reporters: ["Marco Guerriero"], quotes: ["It would be nice to have the downloadable link directly in the chat instead of going into the Project folder to download it."], detail: "UX improvement — show download links inline in chat rather than requiring navigation to project files." },
+      { id: 39, title: "Can't double-click a chat to delete it", priority: "p3", category: "ui", reporters: ["Simone"], quotes: ["I can't double click on a chat to delete it."], detail: "Missing interaction — double-click to delete chat." },
+      { id: 40, title: "Email reply uses wrong name (Simone instead of Marco)", priority: "p3", category: "connectors", reporters: ["Marco Guerriero"], quotes: ["In my reply email it says best, Simone, not Marco."], detail: "Email connector uses hardcoded/wrong sender name." },
+      { id: 41, title: 'Fluso says "Kortix" instead of proper branding', priority: "p3", category: "chat", reporters: ["Surya Kant"], quotes: ["Says Kortix."], detail: "Branding issue — model outputs reference wrong product name." },
+      { id: 42, title: "Tools displayed in chat area instead of side panel", priority: "p3", category: "ui", reporters: ["Simone"], quotes: ["This is an occur UI. I would move this tools on the right side and not have those in the chat like that."], detail: "Tool execution display should be in a side panel, not inline in chat." },
+      { id: 43, title: "Nanobanana API keys not available", priority: "p3", category: "connectors", reporters: ["Aishwarya"], quotes: ["Nanobanana API keys don't seem to be available."], detail: "Third-party API key integration issue." },
+      { id: 44, title: "Fluso doesn't handle nested directories with zip files", priority: "p3", category: "chat", reporters: ["Marco Guerriero"], quotes: ["Fluso does not seem to handle nested directories with zip files in it."], detail: "Zip file extraction fails when archives contain nested directory structures." },
+      { id: 45, title: "dev/null artifacts appearing", priority: "p3", category: "chat", reporters: ["Priyansi"], quotes: ["dev/null querying leads to this null artifact."], detail: "Null/garbage artifacts appearing in the system from dev/null paths." },
+      { id: 46, title: "Double file representation in attachment area", priority: "p3", category: "ui", reporters: ["Marco Argentieri"], quotes: ["Double file represent in attachment area."], detail: "Files appear duplicated in the attachment display area." },
+      { id: 47, title: "Agent Scheduler Console request", priority: "p3", category: "ui", reporters: ["Marco Guerriero"], quotes: ["It would be nice to have a view of the schedule of my current tasks… Agent Scheduler Console within Fluso."], detail: "Feature request — dashboard for viewing scheduled agent tasks." },
+      { id: 48, title: "Manual chronograph sync trigger", priority: "p3", category: "data", reporters: ["Jai"], quotes: ["Can I have an option to manually trigger a chronograph sync from the home screen?"], detail: "Feature request — add a button to manually trigger chronograph data sync." },
+      { id: 49, title: "Fluso taking too long to reply on large messages", priority: "p3", category: "chat", reporters: ["Jai"], quotes: ["Fluso is taking too long to reply. When I send a very large message to Fluso — I don't see the assistant response for a very long time."], detail: "Large input messages cause very long response times with no feedback." }
+    ];
+
+    const catColors = { infra: '#2C2A25', auth: '#DC2626', chat: '#D97706', connectors: '#8A8478', ui: '#6B665D', data: '#16A34A' };
+    const catLabels = { infra: 'Infrastructure', auth: 'Auth', chat: 'Chat / AI', connectors: 'Connectors', ui: 'UI / UX', data: 'Data / Security' };
+    const priLabels = { p0: 'P0 — Ship Blockers', p1: 'P1 — Must Fix', p2: 'P2 — Should Fix', p3: 'P3 — Polish' };
+
+    function buildStats() {
+      const counts = { p0: 0, p1: 0, p2: 0, p3: 0 };
+      issues.forEach(i => counts[i.priority]++);
+      const statsRow = document.getElementById('statsRow');
+      const total = issues.length;
+      const dotColors = { p0: 'var(--paper-brick)', p1: 'var(--paper-amber)', p2: 'var(--paper-ink)', p3: 'var(--paper-walnut)' };
+      statsRow.innerHTML = '<div class="stat-card" data-stat="all" onclick="filterByStat(\'all\')"><div class="stat-number">' + total + '</div><div class="stat-label">Total Issues</div></div>' + Object.entries(counts).map(function(e) { return '<div class="stat-card" data-stat="' + e[0] + '" onclick="filterByStat(\'' + e[0] + '\')"><div class="stat-number">' + e[1] + '</div><div class="stat-label"><span class="stat-dot" style="background:' + dotColors[e[0]] + '"></span>' + priLabels[e[0]] + '</div></div>'; }).join('');
+    }
+
+    function buildPriorityChart() {
+      const counts = { p0: 0, p1: 0, p2: 0, p3: 0 };
+      issues.forEach(i => counts[i.priority]++);
+      const max = Math.max.apply(null, Object.values(counts));
+      const container = document.getElementById('priorityChart');
+      container.innerHTML = Object.entries(counts).map(function(e) { return '<div class="bar-row"><div class="bar-label">' + priLabels[e[0]].split('—')[0].trim() + '</div><div class="bar-track"><div class="bar-fill ' + e[0] + '" style="width: ' + (e[1] / max * 100) + '%">' + e[1] + '</div></div></div>'; }).join('');
+    }
+
+    function buildDonutChart() {
+      const catCounts = {};
+      issues.forEach(i => { catCounts[i.category] = (catCounts[i.category] || 0) + 1; });
+      const total = issues.length;
+      const entries = Object.entries(catCounts).sort(function(a, b) { return b[1] - a[1]; });
+      const svg = document.getElementById('donutChart');
+      let cumulative = 0;
+      const cx = 80, cy = 80, r = 60, strokeWidth = 24;
+      const circumference = 2 * Math.PI * r;
+      let paths = '';
+      entries.forEach(function(e) {
+        const pct = e[1] / total;
+        const dashLen = pct * circumference;
+        const dashOff = -cumulative * circumference;
+        paths += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + catColors[e[0]] + '" stroke-width="' + strokeWidth + '" stroke-dasharray="' + dashLen + ' ' + (circumference - dashLen) + '" stroke-dashoffset="' + dashOff + '" transform="rotate(-90 ' + cx + ' ' + cy + ')" style="transition: all 0.8s cubic-bezier(0.4,0,0.2,1)"/>';
+        cumulative += pct;
+      });
+      svg.innerHTML = paths + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r - strokeWidth/2 - 2) + '" fill="var(--paper-cream)" /><text x="' + cx + '" y="' + (cy - 4) + '" text-anchor="middle" font-family="Space Mono" font-size="24" font-weight="700" fill="var(--paper-deepink)">' + total + '</text><text x="' + cx + '" y="' + (cy + 14) + '" text-anchor="middle" font-family="Inter" font-size="9" fill="var(--paper-walnut)">ISSUES</text>';
+      const legend = document.getElementById('donutLegend');
+      legend.innerHTML = entries.map(function(e) { return '<div class="legend-item"><div class="legend-dot" style="background:' + catColors[e[0]] + '"></div><span>' + catLabels[e[0]] + ' — ' + e[1] + '</span></div>'; }).join('');
+    }
+
+    function buildReportersChart() {
+      const reporterCounts = {};
+      issues.forEach(i => { i.reporters.forEach(function(r) { const name = r.split(' ')[0]; reporterCounts[name] = (reporterCounts[name] || 0) + 1; }); });
+      const entries = Object.entries(reporterCounts).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 10);
+      const max = entries[0][1];
+      const container = document.getElementById('reportersChart');
+      container.innerHTML = entries.map(function(e) { return '<div class="reporter-row"><div class="reporter-name">' + e[0] + '</div><div class="reporter-track"><div class="reporter-fill" style="width: ' + (e[1] / max * 100) + '%"></div></div><div class="reporter-count">' + e[1] + '</div></div>'; }).join('');
+    }
+
+    function buildRoadmap() {
+      const roadmapData = { p0: { title: 'Ship Blockers', items: [8,9,10,2,1] }, p1: { title: 'Must Fix Before Launch', items: [14,15,16,17,18,11] }, p2: { title: 'Should Fix for Launch', items: [3,4,5,12,13,19,26] }, p3: { title: 'Polish & Nice-to-Have', items: [6,7,20,21,22,23,24,25,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49] } };
+      const container = document.getElementById('roadmap');
+      container.innerHTML = Object.entries(roadmapData).map(function(e) {
+        const issueItems = e[1].items.map(function(id) { const issue = issues.find(function(i) { return i.id === id; }); return '<div class="roadmap-item">' + issue.title + '</div>'; }).join('');
+        return '<div class="roadmap-card ' + e[0] + '"><div class="roadmap-header"><span class="roadmap-priority-label">' + e[0].toUpperCase() + '</span><span class="roadmap-title">' + e[1].title + '</span></div><div class="roadmap-items">' + issueItems + '</div></div>';
+      }).join('');
+    }
+
+    let currentFilter = 'all';
+    let currentCategory = null;
+    let searchQuery = '';
+
+    function buildIssuesList() {
+      const container = document.getElementById('issuesList');
+      let filtered = issues;
+      if (currentFilter !== 'all') filtered = filtered.filter(function(i) { return i.priority === currentFilter; });
+      if (currentCategory) filtered = filtered.filter(function(i) { return i.category === currentCategory; });
+      if (searchQuery) { const q = searchQuery.toLowerCase(); filtered = filtered.filter(function(i) { return i.title.toLowerCase().includes(q) || i.detail.toLowerCase().includes(q) || i.reporters.some(function(r) { return r.toLowerCase().includes(q); }) || catLabels[i.category].toLowerCase().includes(q); }); }
+      if (filtered.length === 0) { container.innerHTML = '<div class="empty-state">No issues match the current filters.</div>'; return; }
+      container.innerHTML = filtered.map(function(issue, idx) {
+        const quotesHtml = issue.quotes.map(function(q) { return '<div class="quote">"' + q + '"</div>'; }).join('');
+        const reportersHtml = issue.reporters.length > 0 ? '<div class="issue-reporters">' + issue.reporters.map(function(r) { return '<span class="reporter-pill">' + r + '</span>'; }).join('') + '</div>' : '';
+        const sourceHtml = issue.quotes.length > 0 ? '<div class="source-label">Slack Evidence</div>' + quotesHtml : '';
+        return '<div class="issue-card" data-id="' + issue.id + '" onclick="toggleIssue(this)" style="animation-delay: ' + (idx * 0.03) + 's"><div class="issue-header"><span class="issue-num">#' + issue.id + '</span><span class="issue-priority ' + issue.priority + '">' + issue.priority.toUpperCase() + '</span><span class="issue-title">' + issue.title + '</span><span class="issue-category">' + catLabels[issue.category] + '</span>' + (issue.reporters.length > 0 ? '<span class="issue-source-count">' + issue.reporters.length + ' report' + (issue.reporters.length > 1 ? 's' : '') + '</span>' : '') + '<span class="issue-expand-icon">▶</span></div><div class="issue-detail"><p>' + issue.detail + '</p>' + sourceHtml + reportersHtml + '</div></div>';
+      }).join('');
+    }
+
+    function toggleIssue(el) { el.classList.toggle('expanded'); }
+
+    function filterByStat(priority) {
+      currentFilter = priority; currentCategory = null; searchQuery = '';
+      document.getElementById('searchInput').value = '';
+      document.querySelectorAll('.stat-card').forEach(function(c) { c.classList.toggle('active', c.dataset.stat === priority); });
+      document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.filter === priority); });
+      buildIssuesList();
+    }
+
+    document.getElementById('filterRow').addEventListener('click', function(e) {
+      if (!e.target.classList.contains('filter-tab')) return;
+      const filter = e.target.dataset.filter;
+      if (filter === 'all' || filter.startsWith('p')) { currentFilter = filter; currentCategory = null; } else { currentCategory = currentCategory === filter ? null : filter; }
+      if (filter === 'all' || filter.startsWith('p')) { document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); }); e.target.classList.add('active'); currentCategory = null; } else { document.querySelectorAll('.filter-tab[data-filter]').forEach(function(t) { if (!t.dataset.filter.startsWith('p') && t.dataset.filter !== 'all') { if (t.dataset.filter !== filter) t.classList.remove('active'); } }); }
+      buildIssuesList();
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function(e) { searchQuery = e.target.value; buildIssuesList(); });
+
+    buildStats();
+    buildPriorityChart();
+    buildDonutChart();
+    buildReportersChart();
+    buildRoadmap();
+    buildIssuesList();
+
+    window.addEventListener('load', function() {
+      document.querySelectorAll('.bar-fill, .reporter-fill').forEach(function(el) {
+        const w = el.style.width; el.style.width = '0%';
+        requestAnimationFrame(function() { requestAnimationFrame(function() { el.style.width = w; }); });
+      });
+    });
+  </script>
+</body>
+</html>
